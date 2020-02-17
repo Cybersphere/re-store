@@ -1,36 +1,33 @@
-import {createStore, compose} from "redux";
+import {createStore, applyMiddleware} from "redux";
+import thunkMiddleware from 'redux-thunk'
 
 import reducer from "./reducers"
 
-const logEnhancer =  (createStore => (...args) => {
-    const store = createStore(...args);
-    const originalDispatch = store.dispatch;
+const logMiddleware = () => (next) => (action) => {
+    console.log(action.type);
+    return next(action);
+};
 
-    store.dispatch = (action) => {
-        console.log(action.type)
+const stringMiddleware = () => (next) => (action) => {
+    if (typeof action === "string") {
+        return next({
+            type: action
+        })
+    }
 
-        return originalDispatch(action)
-    };
+    return  next(action)
+};
 
-    return store;
-});
-const stringEnhancer =  (createStore => (...args) => {
-    const store = createStore(...args);
-    const originalDispatch = store.dispatch;
+const store = createStore(reducer, applyMiddleware(thunkMiddleware, stringMiddleware, logMiddleware));
 
-    store.dispatch = (action) => {
-        if (typeof action === "string") {
-            return originalDispatch({
-                type: action
-            })
-        }
 
-        return originalDispatch(action)
-    };
 
-    return store;
-});
+const delayedActionCreator = (timeout) => (dispatch) => {
+    setTimeout(() => dispatch({
+        type: 'DELAYED_ACTION'
+    }), timeout)
+}
 
-const store = createStore(reducer, compose(stringEnhancer,logEnhancer));
+store.dispatch(delayedActionCreator(3000));
 
 export default  store;
